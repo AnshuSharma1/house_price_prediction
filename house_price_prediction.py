@@ -3,7 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 from scipy import stats
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures
+
+from contants import COLUMNS_TO_REMOVE
+from sklearn.linear_model import LinearRegression
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -12,7 +15,6 @@ def get_file_data(file_name):
     filepath = os.path.join(BASE_DIR, file_name)
     csv_path = filepath + '.csv'
     data = pd.read_csv(csv_path, encoding='utf-8')
-    data.iloc[0, 3] = None
     return data
 
 
@@ -27,30 +29,47 @@ def fill_null_data(feature_data):
 
 
 def get_tranformed_features(feature_data):
-    feature_data['date'] = pd.to_datetime(feature_data['date']).year
+    # Get Relevant Columns
+    feature_data['date'] = pd.to_datetime(feature_data['date']).dt.year
     feature_data['orig_age'] = feature_data['date'] - feature_data['yr_built']
-    columns_to_remove = ['id', 'date', 'yr_built', 'yr_renovated']
-    feature_data.drop(columns_to_remove, axis=1, inplace=True)
+    feature_data.drop(COLUMNS_TO_REMOVE, axis=1, inplace=True)
 
-    feature_data = feature_data[(np.abs(stats.zscore(feature_data)) < 3).all(axis=1)]
-    columns_to_normalise = ['bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors',
-                            'waterfront', 'view', 'condition', 'grade', 'sqft_above', 'sqft_basement',
-                            'orig_age', 'sqft_living15', 'sqft_lot15'
-                            ]
+    # Remove outliers on basis of z-score
+    feature_data = feature_data[
+        (np.abs(stats.zscore(feature_data)) < 3).all(axis=1)
+    ]
+
+    # Normalise features between 0-1 scale
     scaler = MinMaxScaler()
-    feature_data.loc[:, columns_to_normalise] = scaler.fit_transform(feature_data.loc[:, columns_to_normalise])
+    feature_data = scaler.fit_transform(feature_data)
 
-    return feature_data
+    prices = feature_data['price']
+    features = feature_data[:, 1:]
+
+    # Expand feature set by polynomial combinations
+    poly = PolynomialFeatures(2)
+    poly_features = poly.fit_transform(features)
+    poly_features = poly_features[:, 1:]
+    poly_features = pd.DataFrame(poly_features)
+
+    return poly_features, prices
 
 
-def clean_feature_data(frame):
-    fill_null_data(frame)
-    frame = get_tranformed_features(frame)
+def get_linear_reg_model(
+        feature_data,
+        prices
+):
+    lm = LinearRegression()
+    reg_model = lm.fit(feature_data, prices)
+
+    return reg_model
 
 
 def main():
     house_data = get_file_data('kc_house_data')
-    clean_feature_data(house_data)
+    fill_null_data(house_data)
+    feature_frame,  price_frame = get_tranformed_features(house_data)
+    reg_model = get_linear_reg_model(feature_frame, price_frame)
 
 
 if __name__ == "__main__":
