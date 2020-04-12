@@ -19,27 +19,27 @@ redis_con = get_redis_connection()
 @app.route('/')
 def root():
     url_list = [
-        request.url + 'predict_price/?bedrooms=3&bathrooms=1&sqft_living=1180&sqft_lot=5650&'
-                      'floors=1&condition=2&grade=7&sqft_above=1180&sqft_basement=0&orig_age=59'
+        request.url + 'predict_prices/?bedrooms=3&bathrooms=1&sqft_living=1180&sqft_lot=5650&'
+                      'floors=1&condition=3&grade=7&sqft_above=1180&sqft_basement=0&orig_age=59'
     ]
     return jsonify(url_list)
 
 
-@app.route('/predict_price/')
+@app.route('/predict_prices/')
 def predict():
     """
-    [3, 1, 1180, 5650, 1.0, 3, 7, 1180, 0, 59]
-    :return:
+    Fetches model data from redis and predict house prices
+    :return: JSON response of predicted data
     """
     bedrooms = int(request.args.get('bedrooms', None))
     sqft_living = int(request.args.get('sqft_living', None))
     floors = int(request.args.get('floors', None))
     orig_age = int(request.args.get('orig_age', None))
     bathrooms = int(request.args.get('bathrooms', 1))
-    sqft_lot = int(request.args.get('sqft_lot', 500))
-    condition = int(request.args.get('condition', 2))
-    grade = int(request.args.get('grade', 3))
-    sqft_above = int(request.args.get('sqft_above', 500))
+    sqft_lot = int(request.args.get('sqft_lot', 5650))
+    condition = int(request.args.get('condition', 3))
+    grade = int(request.args.get('grade', 7))
+    sqft_above = int(request.args.get('sqft_above', 1180))
     sqft_basement = int(request.args.get('sqft_basement', 0))
 
     if None in [bedrooms, sqft_living, floors, orig_age]:
@@ -53,6 +53,7 @@ def predict():
     except TypeError:
         return 'Key does not exist'
 
+    # Scale given data using same scaler used in training
     scaled_data = min_max_scaler.transform([[bedrooms, bathrooms, sqft_living,
                                              sqft_lot, floors, condition, grade,
                                              sqft_above, sqft_basement, orig_age]])

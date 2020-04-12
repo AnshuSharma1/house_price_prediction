@@ -29,6 +29,7 @@ def get_redis_connection():
 
 
 def fill_null_data(feature_data):
+    """ Replace null values with mean of the column """
     null_count = feature_data.isnull().sum()
     null_columns = null_count[null_count > 0].index
     if len(null_columns):
@@ -49,6 +50,7 @@ def get_polynomial_features(features):
 
 
 def get_tranformed_features(feature_data):
+    """Transform features to filter outliers and normalise data between 0-1 scale"""
     # Get Relevant Columns
     feature_data['date'] = pd.to_datetime(feature_data['date'])
     feature_data['date'] = feature_data['date'].dt.year
@@ -85,9 +87,15 @@ def get_sequential_mode(
         feature_data,
         prices
 ):
+    """
+    Build sequential model using 3 dense layers and relu activation
+    :param feature_data: Training feature array
+    :param prices: House prices array
+    :return: Model
+    """
     model = Sequential([
-        Dense(64, activation='relu', input_shape=[10, ]),
-        Dense(64, activation='relu'),
+        Dense(32, activation='relu', input_shape=[10, ]),
+        Dense(32, activation='relu'),
         Dense(1)
     ])
 
@@ -107,6 +115,13 @@ def get_sequential_mode(
 
 
 def evaluate_model(model, test_features, prices):
+    """
+    Evaluate root mean squared error on test data
+    :param model: Model object
+    :param test_features: Test features numpy array
+    :param prices: Test prices array
+    :return: error
+    """
     predictions = model.predict(test_features)
     mean_squared_error = np.sqrt(
         metrics.mean_squared_error(prices, predictions)
