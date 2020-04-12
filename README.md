@@ -1,6 +1,6 @@
 # House Price Prediction
 
-Goal - The objective is to predict prices for a house given its features using liner regression and sequential learning
+The objective is to predict prices for a house given its features using linear regression and sequential learning
 
 * Used Flask for prediction API
 * Redis to store model data and scalers
@@ -8,6 +8,9 @@ Goal - The objective is to predict prices for a house given its features using l
 ## How to setup and run this api
 
 * Create virtual environment in python3 and install libs from requirements.txt
+    - `virtualenv -p python3 venv`
+    - `sourve venv/bin/activate`
+    - `pip install -r requirements.txt` 
 
 * Run `python house_price_prediction.py` to fetch data from csv and store models in redis
 
